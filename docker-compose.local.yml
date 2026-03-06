@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: wg-agent
+    restart: unless-stopped
+    networks:
+      - ggvpn-network
+    ports:
+      - "8000:8000"
+
+networks:
+  ggvpn-network:
+    external: true
