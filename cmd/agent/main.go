@@ -36,7 +36,7 @@ func main() {
 
 	log.Println("wg-agent started on :8080")
 
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	if err := http.ListenAndServe(":8000", r); err != nil {
 		log.Fatal(err)
 	}
 }
