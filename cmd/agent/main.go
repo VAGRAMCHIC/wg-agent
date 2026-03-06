@@ -34,9 +34,9 @@ func main() {
 	r.Post("/peer/auto/qr", handler.QRPeerAuto)
 	r.Get("/health", handler.Health)
 
-	log.Println("wg-agent started on :8080")
+	log.Println("wg-agent started on :8050")
 
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	if err := http.ListenAndServe(":8050", r); err != nil {
 		log.Fatal(err)
 	}
 }
