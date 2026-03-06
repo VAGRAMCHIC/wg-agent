@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	qrcode "github.com/skip2/go-qrcode"
 	"github.com/VAGRAMCHIC/wg-agent/internal/models"
 	"github.com/VAGRAMCHIC/wg-agent/internal/wireguard"
+	qrcode "github.com/skip2/go-qrcode"
 
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -136,4 +136,3 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ok"))
 }
-
