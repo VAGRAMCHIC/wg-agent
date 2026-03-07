@@ -6,17 +6,19 @@ import (
 
 	"github.com/VAGRAMCHIC/wg-agent/internal/models"
 	"github.com/VAGRAMCHIC/wg-agent/internal/wireguard"
+	"github.com/VAGRAMCHIC/wg-agent/pkg/logger"
 	qrcode "github.com/skip2/go-qrcode"
 
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 type Handler struct {
-	wg *wireguard.Manager
+	wg  *wireguard.Manager
+	log *logger.Logger
 }
 
-func New(wg *wireguard.Manager) *Handler {
-	return &Handler{wg: wg}
+func New(wg *wireguard.Manager, log *logger.Logger) *Handler {
+	return &Handler{wg: wg, log: log}
 }
 
 func generateKeys() (privateKey string, publicKey string, err error) {
@@ -50,12 +52,20 @@ func (h *Handler) QRPeerAuto(w http.ResponseWriter, r *http.Request) {
 
 	privKey, pubKey, err := generateKeys()
 	if err != nil {
+		h.log.Error(nil, "failed_to_generate-generateKeys", map[string]interface{}{
+			"error": err.Error(),
+			"func":  "handler.QRPeerAuto",
+		})
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
 	ip, err := h.wg.AddPeerAuto(pubKey)
 	if err != nil {
+		h.log.Error(nil, "failed_to_generate-AddPeerAuto", map[string]interface{}{
+			"error": err.Error(),
+			"func":  "handler.QRPeerAuto",
+		})
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -64,6 +74,10 @@ func (h *Handler) QRPeerAuto(w http.ResponseWriter, r *http.Request) {
 
 	png, err := qrcode.Encode(conf, qrcode.Medium, 256)
 	if err != nil {
+		h.log.Error(nil, "failed_to_generateWGConf", map[string]interface{}{
+			"error": err.Error(),
+			"func":  "handler.QRPeerAuto",
+		})
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -75,6 +89,10 @@ func (h *Handler) QRPeerAuto(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) AddPeer(w http.ResponseWriter, r *http.Request) {
 	var req models.PeerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.log.Error(nil, "failed_AddPeer_NewDecoder", map[string]interface{}{
+			"error": err.Error(),
+			"func":  "handler.AddPeer",
+		})
 		http.Error(w, err.Error(), 400)
 		return
 	}
@@ -84,6 +102,10 @@ func (h *Handler) AddPeer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.wg.AddPeer(req.PublicKey, req.AllowedIPs); err != nil {
+		h.log.Error(nil, "failed_AddPeer_AddPeer", map[string]interface{}{
+			"error": err.Error(),
+			"func":  "handler.AddPeer",
+		})
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -93,11 +115,19 @@ func (h *Handler) AddPeer(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeletePeer(w http.ResponseWriter, r *http.Request) {
 	var req models.PeerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), 400)
+		h.log.Error(nil, "failed_to_DeletePeer", map[string]interface{}{
+			"error": err.Error(),
+			"func":  "handler.DeletePeer",
+		})
+		http.Error(w, err.Error(), 500)
 		return
 	}
 
 	if err := h.wg.RemovePeer(req.PublicKey); err != nil {
+		h.log.Error(nil, "failed_to_DeletePeer_RemovePeer", map[string]interface{}{
+			"error": err.Error(),
+			"func":  "handler.RemovePeer",
+		})
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -108,6 +138,10 @@ func (h *Handler) DeletePeer(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ListPeers(w http.ResponseWriter, r *http.Request) {
 	peers, err := h.wg.ListPeers()
 	if err != nil {
+		h.log.Error(nil, "failed_to_ListPeers", map[string]interface{}{
+			"error": err.Error(),
+			"func":  "handler.ListPeers",
+		})
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -118,12 +152,20 @@ func (h *Handler) ListPeers(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) AddPeerAuto(w http.ResponseWriter, r *http.Request) {
 	var req models.PeerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.log.Error(nil, "failed_to_AddPeerAuto_Decode", map[string]interface{}{
+			"error": err.Error(),
+			"func":  "handler.AddPeerAuto",
+		})
 		http.Error(w, err.Error(), 400)
 		return
 	}
 
 	ip, err := h.wg.AddPeerAuto(req.PublicKey)
 	if err != nil {
+		h.log.Error(nil, "failed_to_AddPeerAuto", map[string]interface{}{
+			"error": err.Error(),
+			"func":  "handler.AddPeerAuto",
+		})
 		http.Error(w, err.Error(), 500)
 		return
 	}

@@ -22,6 +22,6 @@ RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /app/wg-agent .
 
-EXPOSE 8000
+EXPOSE 8050
 
 CMD ["./wg-agent"]

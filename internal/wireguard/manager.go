@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 
 	bolt "go.etcd.io/bbolt"
 
+	"github.com/VAGRAMCHIC/wg-agent/pkg/logger"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -110,16 +112,24 @@ type Manager struct {
 	iface  string
 	client *wgctrl.Client
 	ipPool *IPPool
+	log    *logger.Logger
 }
 
-func New(iface string) (*Manager, error) {
+func New(iface string, log *logger.Logger) (*Manager, error) {
 	client, err := wgctrl.New()
 	if err != nil {
+		log.Error(nil, err.Error(), map[string]interface{}{
+			"curr_date": time.Now(),
+		})
 		return nil, err
 	}
 
 	pool, err := NewIPPool("10.0.1.0/24", "bolt.db")
 	if err != nil {
+		log.Error(nil, err.Error(), map[string]interface{}{
+			"curr_date": time.Now(),
+			"func":      "manager.New",
+		})
 		return nil, err
 	}
 
@@ -127,6 +137,7 @@ func New(iface string) (*Manager, error) {
 		iface:  iface,
 		client: client,
 		ipPool: pool,
+		log:    log,
 	}, nil
 }
 
@@ -142,11 +153,19 @@ func (m *Manager) Endpoint() string {
 func (m *Manager) AddPeer(publicKey string, allowedIP string) error {
 	key, err := wgtypes.ParseKey(publicKey)
 	if err != nil {
+		m.log.Error(nil, err.Error(), map[string]interface{}{
+			"curr_date": time.Now(),
+			"func":      "manager.AddPeer",
+		})
 		return err
 	}
 
 	_, ipnet, err := net.ParseCIDR(allowedIP)
 	if err != nil {
+		m.log.Error(nil, err.Error(), map[string]interface{}{
+			"curr_date": time.Now(),
+			"func":      "manager.AddPeer",
+		})
 		return err
 	}
 
@@ -165,6 +184,10 @@ func (m *Manager) AddPeer(publicKey string, allowedIP string) error {
 func (m *Manager) RemovePeer(publicKey string) error {
 	key, err := wgtypes.ParseKey(publicKey)
 	if err != nil {
+		m.log.Error(nil, err.Error(), map[string]interface{}{
+			"curr_date": time.Now(),
+			"func":      "manager.RemovePeer",
+		})
 		return err
 	}
 
@@ -190,6 +213,10 @@ func (m *Manager) RemovePeer(publicKey string) error {
 func (m *Manager) ListPeers() ([]wgtypes.Peer, error) {
 	dev, err := m.client.Device(m.iface)
 	if err != nil {
+		m.log.Error(nil, err.Error(), map[string]interface{}{
+			"curr_date": time.Now(),
+			"func":      "manager.ListPeers",
+		})
 		return nil, err
 	}
 	return dev.Peers, nil
@@ -198,11 +225,19 @@ func (m *Manager) ListPeers() ([]wgtypes.Peer, error) {
 func (m *Manager) AddPeerAuto(publicKey string) (net.IP, error) {
 	ip, err := m.ipPool.Allocate()
 	if err != nil {
+		m.log.Error(nil, err.Error(), map[string]interface{}{
+			"curr_date": time.Now(),
+			"func":      "manager.AddPeer",
+		})
 		return nil, err
 	}
 
 	err = m.AddPeer(publicKey, ip.String()+"/32")
 	if err != nil {
+		m.log.Error(nil, err.Error(), map[string]interface{}{
+			"curr_date": time.Now(),
+			"func":      "manager.AddPeer",
+		})
 		m.ipPool.Release(ip)
 		return nil, err
 	}

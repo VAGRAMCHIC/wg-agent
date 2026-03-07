@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -22,14 +21,16 @@ func main() {
 	if logPath == "" {
 		logPath = "log"
 	}
+	log, err := logger.New(logPath)
 
-	wgManager, err := wireguard.New(iface)
+	wgManager, err := wireguard.New(iface, log)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(nil, err.Error(), map[string]interface{}{
+			"curr_date": time.Now(),
+		})
 	}
 
-	log, err := logger.New(logPath)
-	handler := api.New(wgManager)
+	handler := api.New(wgManager, log)
 
 	r := chi.NewRouter()
 	r.Use(api.AuthMiddleware)
