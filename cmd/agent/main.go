@@ -1,54 +1,51 @@
 package main
 
 import (
-	"net/http"
-	"os"
-	"time"
+	"context"
 
-	"github.com/go-chi/chi/v5"
-
-	"github.com/VAGRAMCHIC/wg-agent/internal/api"
-	"github.com/VAGRAMCHIC/wg-agent/internal/wireguard"
+	"github.com/VAGRAMCHIC/wg-agent/internal/config"
+	"github.com/VAGRAMCHIC/wg-agent/internal/manager"
+	"github.com/VAGRAMCHIC/wg-agent/internal/server"
 	"github.com/VAGRAMCHIC/wg-agent/pkg/logger"
 )
 
 func main() {
-	iface := os.Getenv("WG_INTERFACE")
-	if iface == "" {
-		iface = "wg0"
-	}
-	logPath := os.Getenv("LOG_PATH")
-	if logPath == "" {
-		logPath = "log"
-	}
-	log, err := logger.New(logPath)
 
-	wgManager, err := wireguard.New(iface, log)
+	cfg := config.Load()
+
+	log, err := logger.New(cfg.LogFile)
 	if err != nil {
-		log.Fatal(nil, err.Error(), map[string]interface{}{
-			"curr_date": time.Now(),
+		panic(err)
+	}
+
+	ctx := context.Background()
+
+	log.Info(ctx, "wg-agent_starting", nil)
+
+	mgr, err := manager.New(cfg.Interface, log)
+	if err != nil {
+		log.Fatal(ctx, "manager_init_failed", map[string]interface{}{
+			"error": err.Error(),
 		})
 	}
 
-	handler := api.New(wgManager, log)
+	err = mgr.EnsureInterface(ctx, cfg.Address)
+	if err != nil {
+		log.Fatal(ctx, "interface_init_failed", map[string]interface{}{
+			"error": err.Error(),
+		})
+	}
 
-	r := chi.NewRouter()
-	r.Use(api.AuthMiddleware)
+	srv := server.New(mgr, log)
 
-	r.Post("/peer", handler.AddPeer)
-	r.Delete("/peer", handler.DeletePeer)
-	r.Get("/peers", handler.ListPeers)
-	r.Post("/peer/auto", handler.AddPeerAuto)
-	r.Post("/peer/auto/qr", handler.QRPeerAuto)
-	r.Get("/health", handler.Health)
-
-	log.Info(nil, "wg-agent started on :8050", map[string]interface{}{
-		"curr_date": time.Now(),
+	log.Info(ctx, "http_server_start", map[string]interface{}{
+		"listen": cfg.Listen,
 	})
 
-	if err := http.ListenAndServe(":8050", r); err != nil {
-		log.Fatal(nil, err.Error(), map[string]interface{}{
-			"curr_date": time.Now(),
+	err = srv.Start(cfg.Listen)
+	if err != nil {
+		log.Fatal(ctx, "server_failed", map[string]interface{}{
+			"error": err.Error(),
 		})
 	}
 }

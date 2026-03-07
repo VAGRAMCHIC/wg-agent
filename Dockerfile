@@ -18,7 +18,12 @@ FROM alpine:3.19
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates \
+    wireguard-tools \
+	iproute2 \
+	iptables \
+	bash \
+	ca-certificates
 
 COPY --from=builder /app/wg-agent .
 
